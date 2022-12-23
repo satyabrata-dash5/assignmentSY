@@ -118,7 +118,9 @@ const HomeScreen = ({ navigation }) => {
             }}
             source={require('../assets/menu.png')}
           />
-          <Feather name="shopping-bag" size={30} color={'black'} />
+          <TouchableOpacity onPress={() => { }}>
+            <Feather name="shopping-bag" size={30} color={'black'} />
+          </TouchableOpacity>
         </View>
         <View style={{ width: '90%', alignSelf: 'center' }}>
           <Text style={styles.headerTxt}>Hi, Satyabrata</Text>

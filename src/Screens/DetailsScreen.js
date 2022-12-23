@@ -5,12 +5,14 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import StarRating from '../Components/StarRating';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import NumericInput from 'react-native-numeric-input'
+import { useDispatch, useSelector } from 'react-redux';
+import { addItemToCart, removeItemFromCart } from '../redux/action/Actions';
+
 
 
 const DetailsScreen = ({ navigation, route }) => {
     const [productData, setProductData] = useState(undefined);
     const [quantity, setQuantity] = useState(1);
-    const [cartProductData, setCartProductData] = useState([]);
     const [showMenu, setShowMenu] = useState(false);
 
 
@@ -43,74 +45,32 @@ const DetailsScreen = ({ navigation, route }) => {
     }, []);
 
     useEffect(() => {
-        _retrieveData();
-        const willFocusSubscription = navigation.addListener('focus', () => {
-            _retrieveData();
-        });
         let data = route.params && route.params.item ? route.params.item : undefined;
         if (data !== undefined) {
             setProductData(data);
         }
-        return willFocusSubscription;
     }, [])
 
-    const _retrieveData = async () => {
-        try {
-            const value = await AsyncStorage.getItem('cartList');
-            if (value !== null) {
-                let data = [];
-                let getData = JSON.parse(value);
-                let newData = data.concat(getData);
-                setCartProductData(newData);
-            }
-        } catch (error) {
-            // Error retrieving data
-        }
+
+    const dispatch = useDispatch();
+
+    const onAddToCart = item => {
+        dispatch(addItemToCart(item));
     };
 
-    const onAddToCart = async () => {
-        if (cartProductData.length >= 5) {
-            Alert.alert('Sorry! Maximum 5 items to be add in cart')
-        }
-        else if (cartProductData.length > 0 && cartProductData.some(x => x.id !== productData.id)) {
-            let data = cartProductData;
-            data.push(productData);
-            try {
-                await AsyncStorage.setItem('cartList', JSON.stringify(data));
-                ToastAndroid.showWithGravity(
-                    "Item added to cart",
-                    ToastAndroid.LONG,
-                    ToastAndroid.CENTER
-                );
-            } catch (error) {
-                console.log("Something went wrong when adding to cart");
-            }
-        } else if (cartProductData.length === 0) {
-            console.log("Else part")
-            let data = cartProductData;
-            data.push(productData);
-            try {
-                await AsyncStorage.setItem('cartList', JSON.stringify(data));
-                ToastAndroid.showWithGravity(
-                    "Item added to cart",
-                    ToastAndroid.LONG,
-                    ToastAndroid.CENTER
-                );
-            } catch (error) {
-                console.log("Something went wrong when adding to cart");
-            }
-        } else {
-            ToastAndroid.showWithGravity(
-                "Item has already added in cart",
-                ToastAndroid.LONG,
-                ToastAndroid.CENTER
-            );
-            return;
-        }
-    }
+    const removeItem = index => {
+        dispatch(removeItemFromCart(index));
+    };
+
+    const items = useSelector(state => state);
+    let addedItems = [];
+    addedItems = items;
+    // setCartProductData(items)
+    // console.log('cartProductData', cartProductData);
+
 
     const getTotalSum = () => {
-        return cartProductData.reduce((sum, { price }) => sum + parseInt(price * quantity), 0)
+        return items.reduce((sum, { price }) => sum + parseInt(price * quantity), 0)
     };
 
 
@@ -191,7 +151,7 @@ const DetailsScreen = ({ navigation, route }) => {
                                         iconSize={20}
                                         step={1}
                                         valueType='real'
-                                        initValue={1}
+                                        initValue={quantity}
                                         minValue={0}
                                         maxValue={100}
                                         rounded
@@ -205,7 +165,7 @@ const DetailsScreen = ({ navigation, route }) => {
                                 <View style={styles.button}>
                                     <TouchableOpacity
                                         style={styles.addCart}
-                                        onPress={() => onAddToCart()}>
+                                        onPress={() => onAddToCart(productData)}>
                                         <Text style={styles.addCartTxt}>Add to cart</Text>
                                     </TouchableOpacity>
                                     <Icon name="favorite" size={30} color={'red'} />
@@ -245,7 +205,7 @@ const DetailsScreen = ({ navigation, route }) => {
                                 {showMenu &&
                                     <View style={{ justifyContent: 'flex-end' }}>
                                         <FlatList
-                                            data={cartProductData}
+                                            data={items}
                                             horizontal
                                             keyExtractor={(item, index) => index.toString()}
                                             renderItem={({ item, index }) => (
@@ -263,7 +223,7 @@ const DetailsScreen = ({ navigation, route }) => {
                             </TouchableOpacity>
                             <View style={{ flex: 0.5, backgroundColor: '#212121' }}>
                                 <FlatList
-                                    data={cartProductData}
+                                    data={items}
                                     keyExtractor={(item, index) => index.toString()}
                                     renderItem={({ item, index }) => (
                                         <View style={styles.menuItem} >
@@ -286,6 +246,11 @@ const DetailsScreen = ({ navigation, route }) => {
                                                         <Feather style={{ alignSelf: 'center' }} name="x" size={18} color={'#EEEEEE'} />
                                                         <Text style={[styles.menuItemText, { fontSize: 28, fontWeight: "500", marginBottom: 10 }]} > {quantity}</Text>
                                                     </View>
+                                                    <TouchableOpacity style={{ justifyContent: 'center', marginBottom: 10, alignSelf: 'center' }} onPress={() => {
+                                                        removeItem(index);
+                                                    }}>
+                                                        <Icon style={{ alignSelf: 'center', marginRight: 20 }} name="delete-outline" size={25} color={'#EEEEEE'} />
+                                                    </TouchableOpacity>
                                                 </View>
                                             </View>
                                         </View>
@@ -293,9 +258,9 @@ const DetailsScreen = ({ navigation, route }) => {
                                 />
                             </View>
 
-                            {cartProductData.length > 0 && (
+                            {items.length > 0 && (
                                 <View style={styles.buyNowBtnContainer}>
-                                    <Text style={styles.totalItemTxt}>{cartProductData.length} Items</Text>
+                                    <Text style={styles.totalItemTxt}>{items.length} Items</Text>
                                     <TouchableOpacity
                                         onPress={() => { }}
                                         style={styles.buyNowBtn}>
